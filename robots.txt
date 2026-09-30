@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://turksandcaicos.caribspa.org/sitemap.xml
+Sitemap: https://turks.tranquilitasspa.com/sitemap.xml
