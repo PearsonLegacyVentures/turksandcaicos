@@ -34,7 +34,7 @@ export async function onRequestPost(context){
   const ref="TCI-"+new Date().toISOString().slice(2,10).replaceAll("-","")+"-"+crypto.randomUUID().slice(0,6).toUpperCase();
   const service=SERVICE_NAMES[data.service]||data.service;
   const payment=data.payment==="pay"?"Pay Online Now":"Pay in Person";
-  const from=env.BOOKING_FROM_EMAIL||"Tranquilitas <bookings@massagebahamas.com>";
+  const from=env.BOOKING_FROM_EMAIL||"Tranquilitas <bookings@bahamasmassages.com>";
   const adminSubject=`[${ref}] Turks & Caicos Booking Request — ${service} — ${data.date}`;
   const adminHtml=`
   <div style="font-family:Arial,sans-serif;color:#17343a;max-width:680px;margin:auto">
