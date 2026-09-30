@@ -18,3 +18,18 @@ const lightbox=document.querySelector("#lightbox"),lightboxImage=document.queryS
 document.querySelectorAll("[data-gallery]").forEach(item=>item.addEventListener("click",()=>{if(!lightbox||!lightboxImage)return;lightboxImage.src=item.dataset.gallery;lightbox.classList.add("open");lightbox.setAttribute("aria-hidden","false");document.body.style.overflow="hidden"}));
 document.addEventListener("click",e=>{if(e.target.matches("[data-lightbox-close]")||e.target===lightbox){lightbox?.classList.remove("open");lightbox?.setAttribute("aria-hidden","true");document.body.style.overflow=""}});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&lightbox?.classList.contains("open")){lightbox.classList.remove("open");lightbox.setAttribute("aria-hidden","true");document.body.style.overflow=""}});
+
+const expPanels=[...document.querySelectorAll(".experience-panel")];
+const expTabs=[...document.querySelectorAll(".experience-tab")];
+const expProgress=document.querySelector("#experienceProgress");
+let expIndex=0;
+function showExperience(i){
+  if(!expPanels.length)return;
+  expIndex=(i+expPanels.length)%expPanels.length;
+  expPanels.forEach((p,n)=>{p.hidden=n!==expIndex;p.classList.toggle("active",n===expIndex)});
+  expTabs.forEach((t,n)=>t.classList.toggle("active",n===expIndex));
+  if(expProgress)expProgress.textContent=String(expIndex+1).padStart(2,"0")+" / "+String(expPanels.length).padStart(2,"0");
+}
+expTabs.forEach((t,i)=>t.addEventListener("click",()=>showExperience(i)));
+document.querySelector("[data-exp-prev]")?.addEventListener("click",()=>showExperience(expIndex-1));
+document.querySelector("[data-exp-next]")?.addEventListener("click",()=>showExperience(expIndex+1));
