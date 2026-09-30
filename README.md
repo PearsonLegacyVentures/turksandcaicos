@@ -5,7 +5,7 @@ Static-first luxury destination site for Tranquilitas mobile massage in Providen
 ## Cloudflare Pages
 - Build command: leave blank
 - Build output directory: /
-- Canonical currently configured as: https://turksandcaicos.caribspa.org
+- Canonical currently configured as: https://turks.tranquilitasspa.com
 
 If the final host changes, replace the canonical domain in the HTML files, robots.txt and sitemap.xml.
 
