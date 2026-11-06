@@ -14,7 +14,7 @@ const form=document.querySelector("#bookingForm");
 function humanService(key){
   return {swedish:"Swedish Massage",deep:"Deep Tissue Massage",couples:"Couples Massage",beach:"Beach-adjacent Massage",yacht:"Yacht Massage"}[key]||key;
 }
-function openBooking(service="swedish",duration="60"){
+function openBooking(service="",duration="60"){
   if(!modal||!form)return;
   modal.classList.add("open");
   modal.setAttribute("aria-hidden","false");
@@ -30,7 +30,7 @@ function closeBooking(){
 }
 document.addEventListener("click",e=>{
   const b=e.target.closest("[data-book]");
-  if(b){e.preventDefault();openBooking(b.dataset.service||"swedish",b.dataset.duration||"60")}
+  if(b){e.preventDefault();openBooking(b.dataset.service||"",b.dataset.duration||"60")}
   if(e.target.matches("[data-close]")||e.target===modal)closeBooking();
 });
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeBooking()});
@@ -84,7 +84,7 @@ function renderBookingSuccess(data,payload){
       <div class="success-ref"><span>REQUEST REFERENCE</span><strong>${data.reference}</strong></div>
       <div class="success-summary">
         <div><span>Service</span><strong>${service}</strong></div>
-        <div><span>Duration</span><strong>${payload.duration} minutes</strong></div>
+        <div><span>Duration</span><strong>${payload.duration} minutes</strong></div><div><span>Service subtotal</span><strong>${window.tranquilitasBookingSummary?.(payload)||"Quote required"}</strong></div>
         <div><span>Date</span><strong>${payload.date}</strong></div>
         <div><span>Preferred time</span><strong>${payload.time}</strong></div>
         <div class="wide"><span>Location</span><strong>${payload.location}</strong></div>
@@ -190,4 +190,56 @@ document.querySelector("[data-exp-next]")?.addEventListener("click",()=>showExpe
   document.addEventListener("click",e=>{
     if(!dock.contains(e.target)){menu.hidden=true;trigger.setAttribute("aria-expanded","false")}
   });
+})();
+
+
+/* Shared country UX: selectable service + visible cost in each booking request. */
+(()=>{
+const form=document.getElementById("bookingForm"),modal=document.getElementById("bookingModal");
+if(!form||!modal||form.dataset.summaryInstalled)return;
+form.dataset.summaryInstalled="true";
+const PRICES={"swedish":[140,200],"deep":[150,220],"couples":[290,410],"beach":[165,240]};
+const service=form.querySelector('[name="service"]'),duration=form.querySelector('[name="duration"]');
+if(!service||!duration)return;
+if(!Array.from(service.options).some(o=>o.value===""))service.insertBefore(new Option("Choose a massage",""),service.firstChild);
+service.required=true;
+const guestsField=document.createElement("div");guestsField.className="field booking-guests-field";
+guestsField.innerHTML='<label for="bookingGuestQty">Number of guests</label><input id="bookingGuestQty" name="guests" type="number" min="1" max="10" step="1" value="1" required>';
+duration.closest(".field")?.after(guestsField);
+const guests=guestsField.querySelector("input");
+const summary=document.createElement("div");summary.className="field full booking-price-summary";summary.setAttribute("aria-live","polite");
+summary.innerHTML='<div class="booking-price-panel"><strong>Request summary</strong><p data-booking-desc>Choose a service to see the listed price.</p><p class="booking-price-value" data-booking-price>Choose a service</p><small data-booking-note>Published USD service rates. Final costs and availability are confirmed before payment.</small></div>';
+const payment=form.querySelector(".pay-choice")?.closest(".field"),submit=form.querySelector('button[type="submit"]');
+(payment||submit?.closest(".field"))?.before(summary);
+const money=n=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(n);
+function calculate(){
+ const svc=service.value,dur=duration.value;
+ if(svc==="couples")guests.value="2";
+ const qty=Number(guests.value),unit=dur==="60"?PRICES[svc]?.[0]:dur==="90"?PRICES[svc]?.[1]:undefined;
+ if(!svc)return{amount:null,note:"Choose a treatment to see the listed service price.",count:qty};
+ if(!Number.isInteger(qty)||qty<1||qty>10)return{amount:null,note:"Enter a valid guest count.",count:qty};
+ if(!Number.isFinite(unit))return{amount:null,note:"Custom service: our concierge will confirm pricing before payment.",count:qty};
+ return{amount:unit*(svc==="couples"?1:qty),note:svc==="couples"?"Couples price covers two guests.":"Listed price per guest, multiplied by "+qty+".",count:qty};
+}
+function update(){
+ const p=calculate();const label=service.options[service.selectedIndex]?.textContent||"Choose a service";
+ summary.querySelector("[data-booking-desc]").textContent=label+" · "+duration.value+" minutes · "+p.count+" guest(s)";
+ summary.querySelector("[data-booking-price]").textContent=p.amount===null?"Price: quote required":"Published service subtotal: "+money(p.amount)+" USD";
+ summary.querySelector("[data-booking-note]").textContent=p.note+" Travel, property or island-specific charges may apply. Your request is not a confirmed booking.";
+}
+window.tranquilitasBookingSummary=payload=>{
+ const svc=payload.service,dur=String(payload.duration),q=Number(payload.guests||guests.value||1);
+ const val=dur==="60"?PRICES[svc]?.[0]:dur==="90"?PRICES[svc]?.[1]:undefined;
+ return Number.isFinite(val)&&Number.isInteger(q)&&q>=1&&q<=10?money(val*(svc==="couples"?1:q))+" USD (service subtotal)":"Quote required";
+};
+form.addEventListener("input",update);form.addEventListener("change",update);
+document.addEventListener("click",event=>{
+ const trigger=event.target.closest("[data-book]");if(!trigger)return;
+ queueMicrotask(()=>{
+ const serviceHint=trigger.dataset.service||({swedish:"swedish",deep:"deep",couples:"couples",beach:"beach"}[location.pathname.split("/").filter(Boolean)[0]?.split("-")[0]]);
+ if(serviceHint&&Array.from(service.options).some(o=>o.value===serviceHint))service.value=serviceHint;
+ update();
+ });
+});
+update();
 })();
